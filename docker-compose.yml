@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: supportmind-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: supportmind
+      POSTGRES_PASSWORD: supportmind
+      POSTGRES_DB: supportmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - supportmind_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: supportmind-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  supportmind_postgres_data:
