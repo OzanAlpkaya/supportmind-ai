@@ -7,10 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  owner
-  admin
-  member
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 model User {
@@ -19,7 +19,32 @@ model User {
   passwordHash String
   firstName    String?
   lastName     String?
-  role         UserRole @default(owner)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  workspaceMemberships WorkspaceMember[]
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  userId      String
+  workspaceId String
+
+  user        User          @relation(fields: [userId], references: [id])
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, workspaceId])
 }

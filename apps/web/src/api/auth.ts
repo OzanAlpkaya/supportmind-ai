@@ -3,7 +3,6 @@ const API_BASE_URL = 'http://localhost:3000';
 export type AuthUser = {
   id: string;
   email: string;
-  role: string;
 };
 
 export type AuthResponse = {

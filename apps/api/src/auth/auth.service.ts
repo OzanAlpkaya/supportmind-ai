@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkspaceRole } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
@@ -14,7 +15,6 @@ type AuthUser = {
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: string;
 };
 
 type AuthResponse = {
@@ -47,6 +47,16 @@ export class AuthService {
         passwordHash,
         firstName: dto.firstName,
         lastName: dto.lastName,
+        workspaceMemberships: {
+          create: {
+            role: WorkspaceRole.OWNER,
+            workspace: {
+              create: {
+                name: 'My Workspace',
+              },
+            },
+          },
+        },
       },
     });
 
@@ -80,7 +90,6 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -92,7 +101,6 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: user.role,
       },
     };
   }

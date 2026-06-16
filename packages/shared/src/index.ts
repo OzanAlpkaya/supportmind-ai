@@ -1,3 +1,3 @@
-export type UserRole = 'owner' | 'admin' | 'member';
+export type WorkspaceRole = "OWNER" | "ADMIN" | "MEMBER";
 
-export type DocumentStatus = 'uploaded' | 'processing' | 'ready' | 'failed';
+export type DocumentStatus = "uploaded" | "processing" | "ready" | "failed";
