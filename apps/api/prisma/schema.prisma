@@ -13,6 +13,24 @@ enum WorkspaceRole {
   MEMBER
 }
 
+enum ConversationStatus {
+  OPEN
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum MessageSender {
+  CUSTOMER
+  AGENT
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  NOTE
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -31,20 +49,65 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members WorkspaceMember[]
+  members       WorkspaceMember[]
+  customers     Customer[]
+  conversations Conversation[]
 }
 
 model WorkspaceMember {
-  id          String        @id @default(uuid())
-  role        WorkspaceRole @default(MEMBER)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String        @id @default(uuid())
+  role      WorkspaceRole @default(MEMBER)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   userId      String
   workspaceId String
 
-  user        User          @relation(fields: [userId], references: [id])
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
 
   @@unique([userId, workspaceId])
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  email     String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  conversations Conversation[]
+
+  @@unique([workspaceId, email])
+}
+
+model Conversation {
+  id        String             @id @default(uuid())
+  subject   String?
+  status    ConversationStatus @default(OPEN)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  workspaceId String
+  customerId  String
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  customer  Customer  @relation(fields: [customerId], references: [id])
+
+  messages Message[]
+}
+
+model Message {
+  id        String        @id @default(uuid())
+  body      String
+  sender    MessageSender
+  type      MessageType   @default(TEXT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
 }

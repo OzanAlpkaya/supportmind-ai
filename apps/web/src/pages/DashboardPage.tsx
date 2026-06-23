@@ -78,6 +78,8 @@ const DashboardPage = () => {
       <h1>Dashboard</h1>
       <p>You are logged in.</p>
 
+      <Link to="/inbox">Open inbox</Link>
+
       {currentWorkspaceMembership && (
         <section>
           <h2>Current workspace</h2>
@@ -100,6 +102,11 @@ const DashboardPage = () => {
           </select>
         </section>
       )}
+
+      <section>
+        <h2>Support</h2>
+        <Link to="/inbox">Open support inbox</Link>
+      </section>
 
       <section>
         <h2>Workspaces</h2>

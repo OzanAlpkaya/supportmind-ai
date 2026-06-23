@@ -5,6 +5,8 @@ import { CreateWorkspacePage } from './pages/CreateWorkspacePage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import { InboxPage } from './pages/InboxPage';
+import { ConversationDetailPage } from './pages/ConversationDetailPage';
 
 const App = () => {
   return (
@@ -29,6 +31,24 @@ const App = () => {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/inbox"
+          element={
+            <ProtectedRoute>
+              <InboxPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/conversations/:id"
+          element={
+            <ProtectedRoute>
+              <ConversationDetailPage />
             </ProtectedRoute>
           }
         />
