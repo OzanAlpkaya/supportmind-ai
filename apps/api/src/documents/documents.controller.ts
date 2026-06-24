@@ -1,12 +1,12 @@
 import {
   Body,
   Controller,
-  Headers,
-  Get,
-  Post,
-  Patch,
   Delete,
+  Get,
+  Headers,
   Param,
+  Patch,
+  Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -34,19 +34,30 @@ export class DocumentsController {
     @Headers('x-workspace-id') workspaceId: string,
     @Body() createDocumentDto: CreateDocumentDto,
   ) {
-    return this.documentsService.create(
-      req.user.id,
-      workspaceId,
-      createDocumentDto,
-    );
+    return this.documentsService.create(req.user.id, workspaceId, createDocumentDto);
   }
 
   @Get()
-  findAll(
+  findAll(@Req() req: AuthenticatedRequest, @Headers('x-workspace-id') workspaceId: string) {
+    return this.documentsService.findAll(req.user.id, workspaceId);
+  }
+
+  @Post(':id/chunks/rebuild')
+  rebuildChunks(
     @Req() req: AuthenticatedRequest,
     @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') documentId: string,
   ) {
-    return this.documentsService.findAll(req.user.id, workspaceId);
+    return this.documentsService.rebuildChunks(req.user.id, workspaceId, documentId);
+  }
+
+  @Get(':id/chunks')
+  findChunks(
+    @Req() req: AuthenticatedRequest,
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') documentId: string,
+  ) {
+    return this.documentsService.findChunks(req.user.id, workspaceId, documentId);
   }
 
   @Get(':id')
@@ -65,12 +76,7 @@ export class DocumentsController {
     @Param('id') documentId: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
   ) {
-    return this.documentsService.update(
-      req.user.id,
-      workspaceId,
-      documentId,
-      updateDocumentDto,
-    );
+    return this.documentsService.update(req.user.id, workspaceId, documentId, updateDocumentDto);
   }
 
   @Delete(':id')

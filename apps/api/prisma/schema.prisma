@@ -38,13 +38,13 @@ enum DocumentStatus {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id        String   @id @default(uuid())
+  email     String   @unique
   passwordHash String
-  firstName    String?
-  lastName     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   workspaceMemberships WorkspaceMember[]
 }
@@ -55,10 +55,11 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members       WorkspaceMember[]
-  customers     Customer[]
-  conversations Conversation[]
-  documents     Document[]
+  members        WorkspaceMember[]
+  customers      Customer[]
+  conversations  Conversation[]
+  documents      Document[]
+  documentChunks DocumentChunk[]
 }
 
 model WorkspaceMember {
@@ -84,8 +85,8 @@ model Customer {
   updatedAt DateTime @updatedAt
 
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id])
   conversations Conversation[]
 
   @@unique([workspaceId, email])
@@ -103,8 +104,7 @@ model Conversation {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id])
   customer  Customer  @relation(fields: [customerId], references: [id])
-
-  messages Message[]
+  messages  Message[]
 }
 
 model Message {
@@ -116,7 +116,8 @@ model Message {
   updatedAt DateTime      @updatedAt
 
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
 }
 
 model Document {
@@ -128,5 +129,27 @@ model Document {
   updatedAt DateTime       @updatedAt
 
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chunks    DocumentChunk[]
+}
+
+model DocumentChunk {
+  id             String   @id @default(uuid())
+  content        String
+  chunkIndex     Int
+  characterCount Int
+  embedding      Unsupported("vector")?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  documentId  String
+  workspaceId String
+
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@index([workspaceId])
 }

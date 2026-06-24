@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ChunkingService } from '../chunking/chunking.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -9,13 +10,10 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly chunkingService: ChunkingService,
   ) {}
 
-  async create(
-    userId: string,
-    workspaceId: string,
-    createDocumentDto: CreateDocumentDto,
-  ) {
+  async create(userId: string, workspaceId: string, createDocumentDto: CreateDocumentDto) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     return this.prisma.document.create({
@@ -84,6 +82,58 @@ export class DocumentsService {
     return this.prisma.document.delete({
       where: {
         id: document.id,
+      },
+    });
+  }
+
+  async rebuildChunks(userId: string, workspaceId: string, documentId: string) {
+    const document = await this.findOne(userId, workspaceId, documentId);
+    const chunks = this.chunkingService.chunkText(document.content);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.documentChunk.deleteMany({
+        where: {
+          documentId: document.id,
+          workspaceId,
+        },
+      });
+
+      if (chunks.length === 0) {
+        return [];
+      }
+
+      await tx.documentChunk.createMany({
+        data: chunks.map((chunk) => ({
+          content: chunk.content,
+          chunkIndex: chunk.chunkIndex,
+          characterCount: chunk.characterCount,
+          documentId: document.id,
+          workspaceId,
+        })),
+      });
+
+      return tx.documentChunk.findMany({
+        where: {
+          documentId: document.id,
+          workspaceId,
+        },
+        orderBy: {
+          chunkIndex: 'asc',
+        },
+      });
+    });
+  }
+
+  async findChunks(userId: string, workspaceId: string, documentId: string) {
+    const document = await this.findOne(userId, workspaceId, documentId);
+
+    return this.prisma.documentChunk.findMany({
+      where: {
+        documentId: document.id,
+        workspaceId,
+      },
+      orderBy: {
+        chunkIndex: 'asc',
       },
     });
   }
