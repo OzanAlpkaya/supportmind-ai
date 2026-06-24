@@ -27,7 +27,7 @@ export class CustomersController {
   @Post()
   create(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateCustomerDto,
   ) {
     return this.customersService.create(req.user.id, workspaceId, dto);
@@ -36,7 +36,7 @@ export class CustomersController {
   @Get()
   findAll(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
   ) {
     return this.customersService.findAll(req.user.id, workspaceId);
   }

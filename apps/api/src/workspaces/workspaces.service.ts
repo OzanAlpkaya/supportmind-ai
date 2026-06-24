@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -57,6 +58,14 @@ export class WorkspacesService {
   }
 
   async findMembershipOrThrow(userId: string, workspaceId: string) {
+    if (!userId) {
+      throw new BadRequestException('User id is required');
+    }
+
+    if (!workspaceId) {
+      throw new BadRequestException('x-workspace-id header is required');
+    }
+
     const membership = await this.prisma.workspaceMember.findUnique({
       where: {
         userId_workspaceId: {

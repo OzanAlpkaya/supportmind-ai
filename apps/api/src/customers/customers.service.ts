@@ -15,15 +15,7 @@ export class CustomersService {
     private readonly workspacesService: WorkspacesService,
   ) {}
 
-  async create(
-    userId: string,
-    workspaceId: string | undefined,
-    dto: CreateCustomerDto,
-  ) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
+  async create(userId: string, workspaceId: string, dto: CreateCustomerDto) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     try {
@@ -48,11 +40,7 @@ export class CustomersService {
     }
   }
 
-  async findAll(userId: string, workspaceId: string | undefined) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
+  async findAll(userId: string, workspaceId: string) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     return this.prisma.customer.findMany({

@@ -78,7 +78,13 @@ const DashboardPage = () => {
       <h1>Dashboard</h1>
       <p>You are logged in.</p>
 
-      <Link to="/inbox">Open inbox</Link>
+      <p>
+        <Link to="/inbox">Open inbox</Link>
+      </p>
+
+      <p>
+        <Link to="/knowledge-base">Open knowledge base</Link>
+      </p>
 
       {currentWorkspaceMembership && (
         <section>

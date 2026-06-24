@@ -17,13 +17,9 @@ export class ConversationsService {
 
   async create(
     userId: string,
-    workspaceId: string | undefined,
+    workspaceId: string,
     dto: CreateConversationDto,
   ) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     const customer = await this.prisma.customer.findFirst({
@@ -49,11 +45,7 @@ export class ConversationsService {
     });
   }
 
-  async findAll(userId: string, workspaceId: string | undefined) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
+  async findAll(userId: string, workspaceId: string) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     return this.prisma.conversation.findMany({
@@ -75,15 +67,7 @@ export class ConversationsService {
     });
   }
 
-  async findOne(
-    userId: string,
-    workspaceId: string | undefined,
-    conversationId: string,
-  ) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
+  async findOne(userId: string, workspaceId: string, conversationId: string) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     const conversation = await this.prisma.conversation.findFirst({
@@ -110,14 +94,10 @@ export class ConversationsService {
 
   async createMessage(
     userId: string,
-    workspaceId: string | undefined,
+    workspaceId: string,
     conversationId: string,
     dto: CreateMessageDto,
   ) {
-    if (!workspaceId) {
-      throw new BadRequestException('Workspace id header is required');
-    }
-
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     const conversation = await this.prisma.conversation.findFirst({

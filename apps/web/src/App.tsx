@@ -7,6 +7,10 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { InboxPage } from './pages/InboxPage';
 import { ConversationDetailPage } from './pages/ConversationDetailPage';
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import { CreateDocumentPage } from './pages/CreateDocumentPage';
+import { DocumentDetailPage } from './pages/DocumentDetailPage';
+import { EditDocumentPage } from './pages/EditDocumentPage';
 
 const App = () => {
   return (
@@ -31,6 +35,42 @@ const App = () => {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/knowledge-base"
+          element={
+            <ProtectedRoute>
+              <KnowledgeBasePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/knowledge-base/new"
+          element={
+            <ProtectedRoute>
+              <CreateDocumentPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/knowledge-base/:id"
+          element={
+            <ProtectedRoute>
+              <DocumentDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/knowledge-base/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditDocumentPage />
             </ProtectedRoute>
           }
         />

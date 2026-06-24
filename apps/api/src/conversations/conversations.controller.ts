@@ -29,7 +29,7 @@ export class ConversationsController {
   @Post()
   create(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateConversationDto,
   ) {
     return this.conversationsService.create(req.user.id, workspaceId, dto);
@@ -38,7 +38,7 @@ export class ConversationsController {
   @Get()
   findAll(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
   ) {
     return this.conversationsService.findAll(req.user.id, workspaceId);
   }
@@ -46,7 +46,7 @@ export class ConversationsController {
   @Get(':id')
   findOne(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') conversationId: string,
   ) {
     return this.conversationsService.findOne(
@@ -59,7 +59,7 @@ export class ConversationsController {
   @Post(':id/messages')
   createMessage(
     @Req() req: AuthenticatedRequest,
-    @Headers('x-workspace-id') workspaceId: string | undefined,
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') conversationId: string,
     @Body() dto: CreateMessageDto,
   ) {
