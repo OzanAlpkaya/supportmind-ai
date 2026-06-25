@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ChunkingService } from '../chunking/chunking.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
@@ -11,9 +13,14 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly chunkingService: ChunkingService,
+    private readonly embeddingsService: EmbeddingsService,
   ) {}
 
-  async create(userId: string, workspaceId: string, createDocumentDto: CreateDocumentDto) {
+  async create(
+    userId: string,
+    workspaceId: string,
+    createDocumentDto: CreateDocumentDto,
+  ) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
     return this.prisma.document.create({
@@ -90,6 +97,18 @@ export class DocumentsService {
     const document = await this.findOne(userId, workspaceId, documentId);
     const chunks = this.chunkingService.chunkText(document.content);
 
+    const chunksWithEmbeddings = await Promise.all(
+      chunks.map(async (chunk) => ({
+        id: randomUUID(),
+        content: chunk.content,
+        chunkIndex: chunk.chunkIndex,
+        characterCount: chunk.characterCount,
+        embedding: await this.embeddingsService.generateEmbedding(
+          chunk.content,
+        ),
+      })),
+    );
+
     return this.prisma.$transaction(async (tx) => {
       await tx.documentChunk.deleteMany({
         where: {
@@ -98,19 +117,34 @@ export class DocumentsService {
         },
       });
 
-      if (chunks.length === 0) {
-        return [];
-      }
+      for (const chunk of chunksWithEmbeddings) {
+        const embeddingSql = `[${chunk.embedding.join(',')}]`;
 
-      await tx.documentChunk.createMany({
-        data: chunks.map((chunk) => ({
-          content: chunk.content,
-          chunkIndex: chunk.chunkIndex,
-          characterCount: chunk.characterCount,
-          documentId: document.id,
-          workspaceId,
-        })),
-      });
+        await tx.$executeRaw`
+        INSERT INTO "DocumentChunk" (
+          "id",
+          "content",
+          "chunkIndex",
+          "characterCount",
+          "createdAt",
+          "updatedAt",
+          "documentId",
+          "workspaceId",
+          "embedding"
+        )
+        VALUES (
+          ${chunk.id},
+          ${chunk.content},
+          ${chunk.chunkIndex},
+          ${chunk.characterCount},
+          NOW(),
+          NOW(),
+          ${document.id},
+          ${workspaceId},
+          ${embeddingSql}::vector
+        )
+      `;
+      }
 
       return tx.documentChunk.findMany({
         where: {

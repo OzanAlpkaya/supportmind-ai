@@ -6,6 +6,8 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { CustomersModule } from './customers/customers.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { DocumentsModule } from './documents/documents.module';
+import { RetrievalModule } from './retrieval/retrieval.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { DocumentsModule } from './documents/documents.module';
     CustomersModule,
     ConversationsModule,
     DocumentsModule,
+    RetrievalModule,
+    AiModule,
   ],
 })
 export class AppModule {}
