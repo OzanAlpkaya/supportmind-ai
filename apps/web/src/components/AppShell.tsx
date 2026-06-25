@@ -1,5 +1,14 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { removeAccessToken, removeCurrentWorkspaceId } from '../auth/tokenStorage';
+
+const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: '⌘' },
+  { to: '/inbox', label: 'Inbox', icon: '✦' },
+  { to: '/knowledge-base', label: 'Knowledge Base', icon: '◈' },
+  { to: '/ai', label: 'AI Assistant', icon: '✧' },
+  { to: '/settings/profile', label: 'Profile', icon: '◌' },
+  { to: '/settings/workspace', label: 'Workspace', icon: '▣' },
+];
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -7,27 +16,40 @@ export function AppShell() {
   function handleLogout() {
     removeAccessToken();
     removeCurrentWorkspaceId();
-    navigate('/login');
+    navigate('/login', { replace: true });
   }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Link to="/dashboard" className="brand">
-          SupportMind AI
-        </Link>
-        <nav className="nav-list">
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/inbox">Inbox</NavLink>
-          <NavLink to="/knowledge-base">Knowledge Base</NavLink>
-          <NavLink to="/ai">AI Assistant</NavLink>
-          <NavLink to="/settings/profile">Profile</NavLink>
-          <NavLink to="/settings/workspace">Workspace</NavLink>
+        <div className="sidebar-brand">
+          <div className="brand-mark">SM</div>
+          <div>
+            <span>SupportMind</span>
+            <small>AI Support OS</small>
+          </div>
+        </div>
+
+        <nav className="nav-list" aria-label="Main navigation">
+          {navItems.map((item) => (
+            <NavLink key={item.to} to={item.to} className="nav-link">
+              <span className="nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </nav>
-        <button type="button" onClick={handleLogout} className="secondary-button">
-          Logout
-        </button>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-status">
+            <span className="status-dot" />
+            <span>Workspace active</span>
+          </div>
+          <button type="button" onClick={handleLogout} className="button button-secondary full-width">
+            Logout
+          </button>
+        </div>
       </aside>
+
       <main className="app-content">
         <Outlet />
       </main>

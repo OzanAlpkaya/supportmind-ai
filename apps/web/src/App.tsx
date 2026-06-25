@@ -1,6 +1,9 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
+
 import { AppShell } from './components/AppShell';
+import HomePage from './components/HomePage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicOnlyRoute from './components/PublicOnlyRoute';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { ConversationDetailPage } from './pages/ConversationDetailPage';
 import { CreateDocumentPage } from './pages/CreateDocumentPage';
@@ -14,13 +17,12 @@ import LoginPage from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import RegisterPage from './pages/RegisterPage';
 import { WorkspaceSettingsPage } from './pages/WorkspaceSettingsPage';
-import HomePage from './components/HomePage';
-import PublicOnlyRoute from './components/PublicOnlyRoute';
 
 const App = () => {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+
       <Route
         path="/login"
         element={
@@ -55,9 +57,12 @@ const App = () => {
         <Route path="/knowledge-base/:id/edit" element={<EditDocumentPage />} />
         <Route path="/workspaces/new" element={<CreateWorkspacePage />} />
         <Route path="/ai" element={<AIAssistantPage />} />
+        <Route path="/ai-assistant" element={<Navigate to="/ai" replace />} />
         <Route path="/settings/profile" element={<ProfilePage />} />
         <Route path="/settings/workspace" element={<WorkspaceSettingsPage />} />
       </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 };

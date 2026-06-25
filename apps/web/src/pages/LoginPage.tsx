@@ -1,84 +1,73 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
 import { saveAccessToken } from '../auth/tokenStorage';
-
-type FormSubmitEvent = {
-  preventDefault: () => void;
-};
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('ozan@example.com');
   const [password, setPassword] = useState('password123');
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (event: FormSubmitEvent) => {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError(null);
-    setAccessToken(null);
     setIsLoading(true);
 
     try {
-      const response = await login({
-        email,
-        password,
-      });
-
-      setAccessToken(response.accessToken);
+      const response = await login({ email, password });
       saveAccessToken(response.accessToken);
       navigate('/dashboard', { replace: true });
     } catch {
-      setError('Invalid email or password');
+      setError('Invalid email or password.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <main>
-      <h1>Login</h1>
+    <main className="auth-shell">
+      <section className="auth-card">
+        <div className="auth-brand">SupportMind AI</div>
+        <h1>Welcome back</h1>
+        <p>Login to manage conversations, knowledge base documents, and AI answers.</p>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
+        <form className="form-stack" onSubmit={handleSubmit}>
+          <label className="field-label">
+            Email
+            <input
+              value={email}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+              type="email"
+              autoComplete="email"
+              required
+            />
+          </label>
 
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
+          <label className="field-label">
+            Password
+            <input
+              value={password}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </label>
 
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          {error && <p className="alert alert-error">{error}</p>}
 
-      {accessToken && (
-        <section>
-          <h2>Login successful</h2>
-          <p>Access token received.</p>
-        </section>
-      )}
+          <button type="submit" className="button button-primary full-width" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
 
-      {error && <p>{error}</p>}
+        <p className="auth-switch">
+          New to SupportMind? <Link to="/register">Create an account</Link>
+        </p>
+      </section>
     </main>
   );
 };

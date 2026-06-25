@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { getAccessToken } from '../auth/tokenStorage';
 
 type PublicOnlyRouteProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {

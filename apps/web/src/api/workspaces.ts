@@ -1,11 +1,7 @@
-import {
-  getAccessToken,
-  getCurrentWorkspaceId,
-  removeCurrentWorkspaceId,
-  saveCurrentWorkspaceId,
-} from '../auth/tokenStorage';
+import { getAccessToken } from '../auth/tokenStorage';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+const CURRENT_WORKSPACE_ID_KEY = 'supportmind_current_workspace_id';
 
 export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 
@@ -26,20 +22,7 @@ export type WorkspaceMembership = {
   workspace: Workspace;
 };
 
-export type WorkspaceMemberWithUser = WorkspaceMembership & {
-  user: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-  };
-};
-
 export type CreateWorkspaceInput = {
-  name: string;
-};
-
-export type UpdateWorkspaceInput = {
   name: string;
 };
 
@@ -50,7 +33,7 @@ async function authorizedFetch(path: string, options: RequestInit = {}) {
     throw new Error('Missing access token');
   }
 
-  return fetch(`${API_URL}${path}`, {
+  return fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -60,19 +43,7 @@ async function authorizedFetch(path: string, options: RequestInit = {}) {
   });
 }
 
-function getWorkspaceHeaders(): HeadersInit {
-  const workspaceId = getCurrentWorkspaceId();
-
-  if (!workspaceId) {
-    throw new Error('Current workspace id not found');
-  }
-
-  return {
-    'x-workspace-id': workspaceId,
-  };
-}
-
-export async function createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
+export async function createWorkspace(input: CreateWorkspaceInput): Promise<WorkspaceMembership> {
   const response = await authorizedFetch('/workspaces', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -82,7 +53,7 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Work
     throw new Error('Failed to create workspace');
   }
 
-  return response.json() as Promise<Workspace>;
+  return response.json();
 }
 
 export async function getWorkspaces(): Promise<WorkspaceMembership[]> {
@@ -92,53 +63,27 @@ export async function getWorkspaces(): Promise<WorkspaceMembership[]> {
     throw new Error('Failed to fetch workspaces');
   }
 
-  return response.json() as Promise<WorkspaceMembership[]>;
+  return response.json();
 }
 
-export async function getCurrentWorkspace(): Promise<WorkspaceMembership | null> {
+export async function getCurrentWorkspace(): Promise<WorkspaceMembership> {
   const response = await authorizedFetch('/workspaces/current');
 
   if (!response.ok) {
     throw new Error('Failed to fetch current workspace');
   }
 
-  return response.json() as Promise<WorkspaceMembership | null>;
-}
-
-export async function updateCurrentWorkspace(input: UpdateWorkspaceInput): Promise<Workspace> {
-  const response = await authorizedFetch('/workspaces/current', {
-    method: 'PATCH',
-    headers: getWorkspaceHeaders(),
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to update workspace');
-  }
-
-  return response.json() as Promise<Workspace>;
-}
-
-export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberWithUser[]> {
-  const response = await authorizedFetch('/workspaces/current/members', {
-    headers: getWorkspaceHeaders(),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch workspace members');
-  }
-
-  return response.json() as Promise<WorkspaceMemberWithUser[]>;
+  return response.json();
 }
 
 export function getStoredCurrentWorkspaceId() {
-  return getCurrentWorkspaceId();
+  return localStorage.getItem(CURRENT_WORKSPACE_ID_KEY);
 }
 
 export function setStoredCurrentWorkspaceId(workspaceId: string) {
-  saveCurrentWorkspaceId(workspaceId);
+  localStorage.setItem(CURRENT_WORKSPACE_ID_KEY, workspaceId);
 }
 
 export function removeStoredCurrentWorkspaceId() {
-  removeCurrentWorkspaceId();
+  localStorage.removeItem(CURRENT_WORKSPACE_ID_KEY);
 }
