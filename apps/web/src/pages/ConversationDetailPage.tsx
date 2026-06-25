@@ -3,23 +3,25 @@ import { Link, useParams } from 'react-router-dom';
 import {
   createMessage,
   fetchConversation,
+  suggestAiReply,
+  updateConversationStatus,
   type ConversationDetail,
+  type ConversationStatus,
   type MessageSender,
 } from '../api/conversations';
-
-const CURRENT_WORKSPACE_KEY = 'supportmind_current_workspace_id';
+import { getCurrentWorkspaceId } from '../auth/tokenStorage';
 
 export function ConversationDetailPage() {
   const { id } = useParams<{ id: string }>();
-
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [body, setBody] = useState('');
   const [sender, setSender] = useState<MessageSender>('AGENT');
+  const [suggestedReply, setSuggestedReply] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
-
-  const currentWorkspaceId = localStorage.getItem(CURRENT_WORKSPACE_KEY);
+  const [suggestingReply, setSuggestingReply] = useState(false);
+  const currentWorkspaceId = getCurrentWorkspaceId();
 
   useEffect(() => {
     async function loadConversation() {
@@ -81,7 +83,6 @@ export function ConversationDetailPage() {
           updatedAt: message.createdAt,
         };
       });
-
       setBody('');
       setSender('AGENT');
     } catch {
@@ -89,6 +90,49 @@ export function ConversationDetailPage() {
     } finally {
       setSendingMessage(false);
     }
+  }
+
+  async function handleStatusChange(event: ChangeEvent<HTMLSelectElement>) {
+    if (!currentWorkspaceId || !id) {
+      return;
+    }
+
+    const nextStatus = event.target.value as ConversationStatus;
+
+    try {
+      const updatedConversation = await updateConversationStatus(
+        currentWorkspaceId,
+        id,
+        nextStatus,
+      );
+      setConversation(updatedConversation);
+    } catch {
+      setError('Failed to update status');
+    }
+  }
+
+  async function handleSuggestReply() {
+    if (!currentWorkspaceId || !id) {
+      setError('No workspace or conversation selected');
+      return;
+    }
+
+    setSuggestingReply(true);
+    setError(null);
+
+    try {
+      const result = await suggestAiReply(currentWorkspaceId, id);
+      setSuggestedReply(result.answer);
+    } catch {
+      setError('Failed to suggest AI reply');
+    } finally {
+      setSuggestingReply(false);
+    }
+  }
+
+  function handleUseSuggestedReply() {
+    setBody(suggestedReply);
+    setSender('AGENT');
   }
 
   function handleBodyChange(event: ChangeEvent<HTMLTextAreaElement>) {
@@ -108,37 +152,44 @@ export function ConversationDetailPage() {
       <main>
         <Link to="/inbox">Back to inbox</Link>
         <h1>Conversation not found</h1>
-        {error && <p>{error}</p>}
+        {error && <p className="error-text">{error}</p>}
       </main>
     );
   }
 
   return (
-    <main>
+    <main className="page-section">
       <Link to="/inbox">Back to inbox</Link>
 
-      <h1>{conversation.subject ?? 'No subject'}</h1>
+      <div className="page-header">
+        <div>
+          <h1>{conversation.subject ?? 'No subject'}</h1>
+          <p>
+            {conversation.customer.name ? `${conversation.customer.name} - ` : ''}
+            {conversation.customer.email}
+          </p>
+        </div>
+        <label>
+          Status
+          <select value={conversation.status} onChange={handleStatusChange}>
+            <option value="OPEN">Open</option>
+            <option value="PENDING">Pending</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </label>
+      </div>
 
-      {error && <p>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-      <section>
-        <h2>Customer</h2>
-        <p>
-          {conversation.customer.name ? `${conversation.customer.name} - ` : ''}
-          {conversation.customer.email}
-        </p>
-        <p>Status: {conversation.status}</p>
-      </section>
-
-      <section>
+      <section className="card stack">
         <h2>Messages</h2>
-
         {conversation.messages.length === 0 ? (
           <p>No messages yet.</p>
         ) : (
-          <ul>
+          <ul className="message-list">
             {conversation.messages.map((message) => (
-              <li key={message.id}>
+              <li key={message.id} className="message-item">
                 <strong>{message.sender}</strong>
                 <p>{message.body}</p>
                 <small>{new Date(message.createdAt).toLocaleString()}</small>
@@ -148,31 +199,39 @@ export function ConversationDetailPage() {
         )}
       </section>
 
-      <section>
+      <section className="card stack">
+        <div className="page-header compact">
+          <h2>AI suggested reply</h2>
+          <button type="button" onClick={handleSuggestReply} disabled={suggestingReply}>
+            {suggestingReply ? 'Suggesting...' : 'Suggest AI Reply'}
+          </button>
+        </div>
+        {suggestedReply ? (
+          <>
+            <p>{suggestedReply}</p>
+            <button type="button" onClick={handleUseSuggestedReply} className="secondary-button">
+              Use in message box
+            </button>
+          </>
+        ) : (
+          <p>No suggestion yet.</p>
+        )}
+      </section>
+
+      <section className="card stack">
         <h2>Add message</h2>
+        <form onSubmit={handleSendMessage} className="stack">
+          <label htmlFor="sender">Sender</label>
+          <select id="sender" value={sender} onChange={handleSenderChange}>
+            <option value="AGENT">Agent</option>
+            <option value="CUSTOMER">Customer</option>
+            <option value="SYSTEM">System</option>
+          </select>
 
-        <form onSubmit={handleSendMessage}>
-          <div>
-            <label htmlFor="message-sender">Sender</label>
-            <select id="message-sender" value={sender} onChange={handleSenderChange}>
-              <option value="AGENT">Agent</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="SYSTEM">System</option>
-            </select>
-          </div>
+          <label htmlFor="message-body">Message</label>
+          <textarea id="message-body" value={body} onChange={handleBodyChange} rows={5} />
 
-          <div>
-            <label htmlFor="message-body">Message</label>
-            <textarea
-              id="message-body"
-              value={body}
-              onChange={handleBodyChange}
-              required
-              rows={4}
-            />
-          </div>
-
-          <button type="submit" disabled={sendingMessage}>
+          <button type="submit" disabled={sendingMessage || !body.trim()}>
             {sendingMessage ? 'Sending...' : 'Send message'}
           </button>
         </form>

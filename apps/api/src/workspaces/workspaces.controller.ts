@@ -1,7 +1,17 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspacesService } from './workspaces.service';
 
 type AuthenticatedRequest = Request & {
@@ -29,5 +39,26 @@ export class WorkspacesController {
   @Get('current')
   getCurrent(@Req() req: AuthenticatedRequest) {
     return this.workspacesService.findCurrentForUser(req.user.id);
+  }
+
+  @Patch('current')
+  updateCurrent(
+    @Req() req: AuthenticatedRequest,
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: UpdateWorkspaceDto,
+  ) {
+    return this.workspacesService.updateCurrentWorkspace(
+      req.user.id,
+      workspaceId,
+      dto,
+    );
+  }
+
+  @Get('current/members')
+  findCurrentMembers(
+    @Req() req: AuthenticatedRequest,
+    @Headers('x-workspace-id') workspaceId: string,
+  ) {
+    return this.workspacesService.findMembers(req.user.id, workspaceId);
   }
 }

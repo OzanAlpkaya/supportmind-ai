@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { login } from '../api/auth';
 import { saveAccessToken } from '../auth/tokenStorage';
@@ -8,6 +9,7 @@ type FormSubmitEvent = {
 };
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('ozan@example.com');
   const [password, setPassword] = useState('password123');
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -29,6 +31,7 @@ const LoginPage = () => {
 
       setAccessToken(response.accessToken);
       saveAccessToken(response.accessToken);
+      navigate('/dashboard', { replace: true });
     } catch {
       setError('Invalid email or password');
     } finally {

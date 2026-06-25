@@ -1,18 +1,33 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { AiService } from './ai.service';
 
 describe('AiService', () => {
-  let service: AiService;
+  it('returns fallback answer when no relevant chunks are found', async () => {
+    const retrievalService = {
+      findRelevantChunks: jest.fn().mockResolvedValue([]),
+    };
+    const workspacesService = {
+      findMembershipOrThrow: jest.fn().mockResolvedValue({}),
+    };
+    const configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'OPENAI_API_KEY') {
+          return 'test-key';
+        }
+        return undefined;
+      }),
+    };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [AiService],
-    }).compile();
+    const service = new AiService(
+      retrievalService as never,
+      workspacesService as never,
+      configService as never,
+    );
 
-    service = module.get<AiService>(AiService);
-  });
+    const result = await service.answerQuestion('user-id', 'workspace-id', 'Unknown?');
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(result).toEqual({
+      answer: 'I do not know based on the available knowledge base.',
+      sources: [],
+    });
   });
 });

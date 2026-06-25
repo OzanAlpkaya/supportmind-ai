@@ -21,6 +21,7 @@ export class RetrievalService {
     workspaceId: string,
     question: string,
     limit = 5,
+    maxDistance = 1.35,
   ): Promise<RelevantChunk[]> {
     const embedding = await this.embeddingsService.generateEmbedding(question);
     const embeddingSql = `[${embedding.join(',')}]`;
@@ -36,6 +37,8 @@ export class RetrievalService {
       INNER JOIN "Document" d ON d."id" = dc."documentId"
       WHERE dc."workspaceId" = ${workspaceId}
         AND dc."embedding" IS NOT NULL
+        AND d."status" = 'PUBLISHED'
+        AND dc."embedding" <-> ${embeddingSql}::vector <= ${maxDistance}
       ORDER BY dc."embedding" <-> ${embeddingSql}::vector
       LIMIT ${limit}
     `;

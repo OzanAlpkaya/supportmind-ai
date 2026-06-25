@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DocumentStatus } from '@prisma/client';
 import { ChunkingService } from '../chunking/chunking.service';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
-import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
@@ -23,7 +24,7 @@ export class DocumentsService {
   ) {
     await this.workspacesService.findMembershipOrThrow(userId, workspaceId);
 
-    return this.prisma.document.create({
+    const document = await this.prisma.document.create({
       data: {
         title: createDocumentDto.title,
         content: createDocumentDto.content,
@@ -31,6 +32,12 @@ export class DocumentsService {
         workspaceId,
       },
     });
+
+    if (document.status === DocumentStatus.PUBLISHED) {
+      await this.rebuildChunksForDocument(document.id, workspaceId, document.content);
+    }
+
+    return document;
   }
 
   async findAll(userId: string, workspaceId: string) {
@@ -71,7 +78,7 @@ export class DocumentsService {
   ) {
     const document = await this.findOne(userId, workspaceId, documentId);
 
-    return this.prisma.document.update({
+    const updatedDocument = await this.prisma.document.update({
       where: {
         id: document.id,
       },
@@ -81,6 +88,23 @@ export class DocumentsService {
         status: updateDocumentDto.status,
       },
     });
+
+    if (updatedDocument.status === DocumentStatus.PUBLISHED) {
+      await this.rebuildChunksForDocument(
+        updatedDocument.id,
+        workspaceId,
+        updatedDocument.content,
+      );
+    } else {
+      await this.prisma.documentChunk.deleteMany({
+        where: {
+          documentId: updatedDocument.id,
+          workspaceId,
+        },
+      });
+    }
+
+    return updatedDocument;
   }
 
   async remove(userId: string, workspaceId: string, documentId: string) {
@@ -95,67 +119,8 @@ export class DocumentsService {
 
   async rebuildChunks(userId: string, workspaceId: string, documentId: string) {
     const document = await this.findOne(userId, workspaceId, documentId);
-    const chunks = this.chunkingService.chunkText(document.content);
 
-    const chunksWithEmbeddings = await Promise.all(
-      chunks.map(async (chunk) => ({
-        id: randomUUID(),
-        content: chunk.content,
-        chunkIndex: chunk.chunkIndex,
-        characterCount: chunk.characterCount,
-        embedding: await this.embeddingsService.generateEmbedding(
-          chunk.content,
-        ),
-      })),
-    );
-
-    return this.prisma.$transaction(async (tx) => {
-      await tx.documentChunk.deleteMany({
-        where: {
-          documentId: document.id,
-          workspaceId,
-        },
-      });
-
-      for (const chunk of chunksWithEmbeddings) {
-        const embeddingSql = `[${chunk.embedding.join(',')}]`;
-
-        await tx.$executeRaw`
-        INSERT INTO "DocumentChunk" (
-          "id",
-          "content",
-          "chunkIndex",
-          "characterCount",
-          "createdAt",
-          "updatedAt",
-          "documentId",
-          "workspaceId",
-          "embedding"
-        )
-        VALUES (
-          ${chunk.id},
-          ${chunk.content},
-          ${chunk.chunkIndex},
-          ${chunk.characterCount},
-          NOW(),
-          NOW(),
-          ${document.id},
-          ${workspaceId},
-          ${embeddingSql}::vector
-        )
-      `;
-      }
-
-      return tx.documentChunk.findMany({
-        where: {
-          documentId: document.id,
-          workspaceId,
-        },
-        orderBy: {
-          chunkIndex: 'asc',
-        },
-      });
-    });
+    return this.rebuildChunksForDocument(document.id, workspaceId, document.content);
   }
 
   async findChunks(userId: string, workspaceId: string, documentId: string) {
@@ -169,6 +134,72 @@ export class DocumentsService {
       orderBy: {
         chunkIndex: 'asc',
       },
+    });
+  }
+
+  private async rebuildChunksForDocument(
+    documentId: string,
+    workspaceId: string,
+    content: string,
+  ) {
+    const chunks = this.chunkingService.chunkText(content);
+
+    const chunksWithEmbeddings = await Promise.all(
+      chunks.map(async (chunk) => ({
+        id: randomUUID(),
+        content: chunk.content,
+        chunkIndex: chunk.chunkIndex,
+        characterCount: chunk.characterCount,
+        embedding: await this.embeddingsService.generateEmbedding(chunk.content),
+      })),
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.documentChunk.deleteMany({
+        where: {
+          documentId,
+          workspaceId,
+        },
+      });
+
+      for (const chunk of chunksWithEmbeddings) {
+        const embeddingSql = `[${chunk.embedding.join(',')}]`;
+
+        await tx.$executeRaw`
+          INSERT INTO "DocumentChunk" (
+            "id",
+            "content",
+            "chunkIndex",
+            "characterCount",
+            "createdAt",
+            "updatedAt",
+            "documentId",
+            "workspaceId",
+            "embedding"
+          )
+          VALUES (
+            ${chunk.id},
+            ${chunk.content},
+            ${chunk.chunkIndex},
+            ${chunk.characterCount},
+            NOW(),
+            NOW(),
+            ${documentId},
+            ${workspaceId},
+            ${embeddingSql}::vector
+          )
+        `;
+      }
+
+      return tx.documentChunk.findMany({
+        where: {
+          documentId,
+          workspaceId,
+        },
+        orderBy: {
+          chunkIndex: 'asc',
+        },
+      });
     });
   }
 }

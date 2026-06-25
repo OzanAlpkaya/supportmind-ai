@@ -7,6 +7,7 @@ import {
 import { WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 
 @Injectable()
 export class WorkspacesService {
@@ -57,6 +58,46 @@ export class WorkspacesService {
     });
   }
 
+  async updateCurrentWorkspace(
+    userId: string,
+    workspaceId: string,
+    dto: UpdateWorkspaceDto,
+  ) {
+    await this.ensureOwner(userId, workspaceId);
+
+    return this.prisma.workspace.update({
+      where: {
+        id: workspaceId,
+      },
+      data: {
+        name: dto.name,
+      },
+    });
+  }
+
+  async findMembers(userId: string, workspaceId: string) {
+    await this.findMembershipOrThrow(userId, workspaceId);
+
+    return this.prisma.workspaceMember.findMany({
+      where: {
+        workspaceId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
   async findMembershipOrThrow(userId: string, workspaceId: string) {
     if (!userId) {
       throw new BadRequestException('User id is required');
@@ -89,9 +130,7 @@ export class WorkspacesService {
     const membership = await this.findMembershipOrThrow(userId, workspaceId);
 
     if (membership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException(
-        'Only workspace owners can perform this action',
-      );
+      throw new ForbiddenException('Only workspace owners can perform this action');
     }
 
     return membership;

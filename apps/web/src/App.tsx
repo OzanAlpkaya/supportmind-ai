@@ -1,108 +1,64 @@
 import { Link, Route, Routes } from 'react-router-dom';
-
+import { AppShell } from './components/AppShell';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AIAssistantPage } from './pages/AIAssistantPage';
+import { ConversationDetailPage } from './pages/ConversationDetailPage';
+import { CreateDocumentPage } from './pages/CreateDocumentPage';
 import { CreateWorkspacePage } from './pages/CreateWorkspacePage';
 import DashboardPage from './pages/DashboardPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import { InboxPage } from './pages/InboxPage';
-import { ConversationDetailPage } from './pages/ConversationDetailPage';
-import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
-import { CreateDocumentPage } from './pages/CreateDocumentPage';
 import { DocumentDetailPage } from './pages/DocumentDetailPage';
 import { EditDocumentPage } from './pages/EditDocumentPage';
+import { InboxPage } from './pages/InboxPage';
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import LoginPage from './pages/LoginPage';
+import { ProfilePage } from './pages/ProfilePage';
+import RegisterPage from './pages/RegisterPage';
+import { WorkspaceSettingsPage } from './pages/WorkspaceSettingsPage';
+import HomePage from './components/HomePage';
+import PublicOnlyRoute from './components/PublicOnlyRoute';
 
 const App = () => {
   return (
-    <div>
-      <nav>
-        <Link to="/">Home</Link>
-        {' | '}
-        <Link to="/login">Login</Link>
-        {' | '}
-        <Link to="/register">Register</Link>
-        {' | '}
-        <Link to="/dashboard">Dashboard</Link>
-      </nav>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        }
+      />
 
-      <Routes>
-        <Route path="/" element={<h1>SupportMind AI</h1>} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/register"
+        element={
+          <PublicOnlyRoute>
+            <RegisterPage />
+          </PublicOnlyRoute>
+        }
+      />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/knowledge-base"
-          element={
-            <ProtectedRoute>
-              <KnowledgeBasePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/knowledge-base/new"
-          element={
-            <ProtectedRoute>
-              <CreateDocumentPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/knowledge-base/:id"
-          element={
-            <ProtectedRoute>
-              <DocumentDetailPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/knowledge-base/:id/edit"
-          element={
-            <ProtectedRoute>
-              <EditDocumentPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/inbox"
-          element={
-            <ProtectedRoute>
-              <InboxPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/conversations/:id"
-          element={
-            <ProtectedRoute>
-              <ConversationDetailPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/workspaces/new"
-          element={
-            <ProtectedRoute>
-              <CreateWorkspacePage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </div>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppShell />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/inbox" element={<InboxPage />} />
+        <Route path="/conversations/:id" element={<ConversationDetailPage />} />
+        <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+        <Route path="/knowledge-base/new" element={<CreateDocumentPage />} />
+        <Route path="/knowledge-base/:id" element={<DocumentDetailPage />} />
+        <Route path="/knowledge-base/:id/edit" element={<EditDocumentPage />} />
+        <Route path="/workspaces/new" element={<CreateWorkspacePage />} />
+        <Route path="/ai" element={<AIAssistantPage />} />
+        <Route path="/settings/profile" element={<ProfilePage />} />
+        <Route path="/settings/workspace" element={<WorkspaceSettingsPage />} />
+      </Route>
+    </Routes>
   );
 };
 

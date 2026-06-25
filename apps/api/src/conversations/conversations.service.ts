@@ -1,18 +1,17 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConversationStatus, MessageSender } from '@prisma/client';
+import { AiService } from '../ai/ai.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { WorkspacesService } from '../workspaces/workspaces.service';
 
 @Injectable()
 export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly aiService: AiService,
   ) {}
 
   async create(
@@ -130,5 +129,51 @@ export class ConversationsService {
     });
 
     return message;
+  }
+
+  async updateStatus(
+    userId: string,
+    workspaceId: string,
+    conversationId: string,
+    status: ConversationStatus,
+  ) {
+    const conversation = await this.findOne(userId, workspaceId, conversationId);
+
+    return this.prisma.conversation.update({
+      where: {
+        id: conversation.id,
+      },
+      data: {
+        status,
+      },
+      include: {
+        customer: true,
+        messages: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
+  async suggestAiReply(
+    userId: string,
+    workspaceId: string,
+    conversationId: string,
+  ) {
+    const conversation = await this.findOne(userId, workspaceId, conversationId);
+    const latestCustomerMessage = [...conversation.messages]
+      .reverse()
+      .find((message) => message.sender === MessageSender.CUSTOMER);
+
+    if (!latestCustomerMessage) {
+      throw new NotFoundException('No customer message found for this conversation');
+    }
+
+    return this.aiService.generateWorkspaceAnswer(
+      workspaceId,
+      latestCustomerMessage.body,
+    );
   }
 }

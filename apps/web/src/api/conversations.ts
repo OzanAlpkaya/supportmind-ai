@@ -1,12 +1,11 @@
 import { getAccessToken } from '../auth/tokenStorage';
+import type { AiAnswerResponse } from './ai';
 import type { Customer } from './customers';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
 export type ConversationStatus = 'OPEN' | 'PENDING' | 'RESOLVED' | 'CLOSED';
-
 export type MessageSender = 'CUSTOMER' | 'AGENT' | 'SYSTEM';
-
 export type MessageType = 'TEXT' | 'NOTE';
 
 export type Message = {
@@ -65,7 +64,9 @@ function getAuthHeaders(workspaceId: string): HeadersInit {
   };
 }
 
-export async function fetchConversations(workspaceId: string): Promise<ConversationListItem[]> {
+export async function fetchConversations(
+  workspaceId: string,
+): Promise<ConversationListItem[]> {
   const response = await fetch(`${API_BASE_URL}/conversations`, {
     headers: getAuthHeaders(workspaceId),
   });
@@ -110,6 +111,46 @@ export async function createConversation(
   }
 
   return response.json() as Promise<ConversationWithCustomer>;
+}
+
+export async function updateConversationStatus(
+  workspaceId: string,
+  conversationId: string,
+  status: ConversationStatus,
+): Promise<ConversationDetail> {
+  const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/status`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeaders(workspaceId),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update conversation status');
+  }
+
+  return response.json() as Promise<ConversationDetail>;
+}
+
+export async function suggestAiReply(
+  workspaceId: string,
+  conversationId: string,
+): Promise<AiAnswerResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/conversations/${conversationId}/ai-suggest-reply`,
+    {
+      method: 'POST',
+      headers: getAuthHeaders(workspaceId),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to suggest AI reply');
+  }
+
+  return response.json() as Promise<AiAnswerResponse>;
 }
 
 export async function createMessage(
