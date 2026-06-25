@@ -5,7 +5,7 @@ import {
   saveCurrentWorkspaceId,
 } from '../auth/tokenStorage';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
 export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 
@@ -72,9 +72,7 @@ function getWorkspaceHeaders(): HeadersInit {
   };
 }
 
-export async function createWorkspace(
-  input: CreateWorkspaceInput,
-): Promise<Workspace> {
+export async function createWorkspace(input: CreateWorkspaceInput): Promise<Workspace> {
   const response = await authorizedFetch('/workspaces', {
     method: 'POST',
     body: JSON.stringify(input),
@@ -107,9 +105,7 @@ export async function getCurrentWorkspace(): Promise<WorkspaceMembership | null>
   return response.json() as Promise<WorkspaceMembership | null>;
 }
 
-export async function updateCurrentWorkspace(
-  input: UpdateWorkspaceInput,
-): Promise<Workspace> {
+export async function updateCurrentWorkspace(input: UpdateWorkspaceInput): Promise<Workspace> {
   const response = await authorizedFetch('/workspaces/current', {
     method: 'PATCH',
     headers: getWorkspaceHeaders(),
